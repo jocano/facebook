@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Facebook Post Image Generator</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 1rem;
+      background: #1a1a2e;
+      color: #eee;
+    }
+    h1 { font-size: 1.25rem; margin-bottom: 1rem; }
+    .controls {
+      display: grid;
+      gap: 0.75rem;
+      margin-bottom: 1rem;
+    }
+    label { display: block; font-size: 0.85rem; color: #aaa; }
+    input[type="text"], input[type="color"], input[type="number"], textarea, select {
+      width: 100%;
+      padding: 0.5rem;
+      border: 1px solid #444;
+      border-radius: 6px;
+      background: #2d2d44;
+      color: #fff;
+    }
+    textarea { min-height: 100px; resize: vertical; font: inherit; }
+    input[type="color"] { height: 40px; cursor: pointer; }
+    .row { display: flex; gap: 0.5rem; align-items: center; }
+    .row input[type="number"] { max-width: 80px; }
+    button {
+      padding: 0.6rem 1rem;
+      border: none;
+      border-radius: 6px;
+      background: #1877f2;
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:hover { background: #166fe5; }
+    button.secondary { background: #444; }
+    button.secondary:hover { background: #555; }
+    #preview {
+      margin: 1rem 0;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    #preview img { display: block; max-width: 100%; height: auto; }
+    .hint { font-size: 0.75rem; color: #888; margin-top: 0.25rem; }
+  </style>
+</head>
+<body>
+  <h1>Facebook Post Image Generator</h1>
+  <div class="controls">
+    <div>
+      <label>Post text</label>
+      <textarea id="text" rows="5" placeholder="Your post text (multiple lines allowed)" maxlength="2000">Hello, World!</textarea>
+      <span class="hint">Several lines supported. Max 2000 characters.</span>
+    </div>
+    <div class="row">
+      <div>
+        <label>Background color 1</label>
+        <input type="color" id="bgColor" value="#1877f2">
+      </div>
+      <div>
+        <label>Background color 2</label>
+        <input type="color" id="bgColor2" value="#0d47a1">
+      </div>
+    </div>
+    <div>
+      <label>Background style</label>
+      <select id="bgStyle">
+        <option value="diagonal">Diagonal split</option>
+        <option value="gradient">Diagonal gradient</option>
+        <option value="curved">Curved split</option>
+        <option value="wave">Wave split</option>
+      </select>
+      <span class="hint">Two colors with a non-rectangular separation.</span>
+    </div>
+    <div class="row">
+      <div>
+        <label>Width (px)</label>
+        <input type="number" id="width" value="1200" min="400" max="2000" step="100">
+      </div>
+      <div>
+        <label>Height (px)</label>
+        <input type="number" id="height" value="630" min="300" max="1200" step="50">
+      </div>
+    </div>
+    <div>
+      <label>Text font size (px)</label>
+      <input type="number" id="fontSize" value="72" min="24" max="300" step="4">
+      <span class="hint">Larger = bigger text. Auto-shrinks if text doesn’t fit.</span>
+    </div>
+    <div>
+      <label>Author (footer)</label>
+      <input type="text" id="author" placeholder="Author name" maxlength="100">
+      <span class="hint">Shown at the bottom of the post in small text.</span>
+    </div>
+    <div class="row">
+      <div>
+        <label>JPEG quality (0–1)</label>
+        <input type="number" id="quality" value="0.85" min="0.5" max="1" step="0.05">
+      </div>
+    </div>
+    <p class="hint">1200×630 is Facebook’s recommended link image size. Lower quality = smaller file.</p>
+    <div class="row">
+      <button type="button" id="draw">Update preview</button>
+      <button type="button" id="download" class="secondary">Download image</button>
+    </div>
+  </div>
+  <div id="preview"></div>
+
+  <script>
+    (function () {
+      const textInput = document.getElementById('text');
+      const bgColorInput = document.getElementById('bgColor');
+      const bgColor2Input = document.getElementById('bgColor2');
+      const bgStyleSelect = document.getElementById('bgStyle');
+      const widthInput = document.getElementById('width');
+      const heightInput = document.getElementById('height');
+      const fontSizeInput = document.getElementById('fontSize');
+      const authorInput = document.getElementById('author');
+      const qualityInput = document.getElementById('quality');
+      const drawBtn = document.getElementById('draw');
+      const downloadBtn = document.getElementById('download');
+      const preview = document.getElementById('preview');
+
+      function draw() {
+        const w = Math.min(2000, Math.max(400, parseInt(widthInput.value, 10) || 1200));
+        const h = Math.min(1200, Math.max(300, parseInt(heightInput.value, 10) || 630));
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+
+        const c1 = bgColorInput.value;
+        const c2 = bgColor2Input.value;
+        const style = bgStyleSelect.value;
+
+        function drawTwoColorBackground(ctx, w, h, color1, color2, style) {
+          if (style === 'gradient') {
+            const g = ctx.createLinearGradient(0, 0, w, h);
+            g.addColorStop(0, color1);
+            g.addColorStop(1, color2);
+            ctx.fillStyle = g;
+            ctx.fillRect(0, 0, w, h);
+            return;
+          }
+          ctx.fillStyle = color1;
+          ctx.fillRect(0, 0, w, h);
+          if (style === 'diagonal') {
+            ctx.fillStyle = color2;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(w, 0);
+            ctx.lineTo(w, h);
+            ctx.closePath();
+            ctx.fill();
+          } else if (style === 'curved') {
+            ctx.fillStyle = color2;
+            ctx.beginPath();
+            ctx.moveTo(0, 0);
+            ctx.lineTo(w, 0);
+            ctx.lineTo(w, h);
+            ctx.quadraticCurveTo(w * 0.3, h * 0.5, 0, h);
+            ctx.closePath();
+            ctx.fill();
+          } else if (style === 'wave') {
+            ctx.fillStyle = color2;
+            const cx = w * 0.55;
+            const amp = w * 0.08;
+            const periods = 2.5;
+            ctx.beginPath();
+            ctx.moveTo(cx, 0);
+            for (let i = 1; i <= 80; i++) {
+              const t = i / 80;
+              const y = t * h;
+              const x = cx + amp * Math.sin(t * Math.PI * periods);
+              ctx.lineTo(x, y);
+            }
+            ctx.lineTo(w, h);
+            ctx.lineTo(w, 0);
+            ctx.closePath();
+            ctx.fill();
+          }
+        }
+        drawTwoColorBackground(ctx, w, h, c1, c2, style);
+
+        const rawText = (textInput.value || ' ').trim() || 'Hello, World!';
+        ctx.fillStyle = '#ffffff';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+
+        let fontSize = Math.min(300, Math.max(24, parseInt(fontSizeInput.value, 10) || 72));
+        ctx.font = 'bold ' + fontSize + 'px system-ui, -apple-system, sans-serif';
+        const maxWidth = w * 0.85;
+
+        function wrapParagraph(ctx, paragraph, maxW) {
+          const words = paragraph.split(/\s+/).filter(Boolean);
+          const out = [];
+          let line = '';
+          for (let i = 0; i < words.length; i++) {
+            const test = line ? line + ' ' + words[i] : words[i];
+            const m = ctx.measureText(test);
+            if (m.width > maxW && line) {
+              out.push(line);
+              line = words[i];
+            } else {
+              line = test;
+            }
+          }
+          if (line) out.push(line);
+          return out;
+        }
+
+        function buildLines(ctx, text, maxW) {
+          const lines = [];
+          const paragraphs = text.split(/\n/).map(function (s) { return s.trim(); }).filter(Boolean);
+          for (let p = 0; p < paragraphs.length; p++) {
+            const wrapped = wrapParagraph(ctx, paragraphs[p], maxW);
+            for (let j = 0; j < wrapped.length; j++) lines.push(wrapped[j]);
+          }
+          return lines.length ? lines : [' '];
+        }
+
+        let lines = buildLines(ctx, rawText, maxWidth);
+
+        while (lines.length * (fontSize * 1.4) > h * 0.8 && fontSize > 12) {
+          fontSize -= 4;
+          ctx.font = 'bold ' + fontSize + 'px system-ui, -apple-system, sans-serif';
+          lines = buildLines(ctx, rawText, maxWidth);
+        }
+
+        const totalHeight = lines.length * (fontSize * 1.35);
+        let y = (h - totalHeight) / 2 + fontSize * 0.65;
+        for (let i = 0; i < lines.length; i++) {
+          ctx.fillText(lines[i], w / 2, y);
+          y += fontSize * 1.35;
+        }
+
+        const author = (authorInput.value || '').trim();
+        if (author) {
+          const authorFontSize = Math.max(14, Math.min(28, Math.floor(Math.min(w, h) * 0.022)));
+          ctx.font = authorFontSize + 'px system-ui, -apple-system, sans-serif';
+          ctx.fillStyle = 'rgba(255,255,255,0.92)';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(author, w / 2, h - authorFontSize * 1.8);
+        }
+
+        return canvas;
+      }
+
+      function updatePreview() {
+        const canvas = draw();
+        const img = document.createElement('img');
+        img.src = canvas.toDataURL('image/jpeg', 0.9);
+        img.alt = 'Preview';
+        preview.innerHTML = '';
+        preview.appendChild(img);
+      }
+
+      function downloadImage() {
+        const canvas = draw();
+        const quality = Math.min(1, Math.max(0.5, parseFloat(qualityInput.value) || 0.85));
+        const url = canvas.toDataURL('image/jpeg', quality);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'fb-post-' + Date.now() + '.jpg';
+        a.click();
+      }
+
+      drawBtn.addEventListener('click', updatePreview);
+      downloadBtn.addEventListener('click', downloadImage);
+      textInput.addEventListener('input', updatePreview);
+      bgColorInput.addEventListener('input', updatePreview);
+      bgColor2Input.addEventListener('input', updatePreview);
+      bgStyleSelect.addEventListener('change', updatePreview);
+      widthInput.addEventListener('change', updatePreview);
+      heightInput.addEventListener('change', updatePreview);
+      fontSizeInput.addEventListener('input', updatePreview);
+      authorInput.addEventListener('input', updatePreview);
+
+      updatePreview();
+    })();
+  </script>
+</body>
+</html>
