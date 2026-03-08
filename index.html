@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Facebook Posts</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="header-inner">
+      <span class="logo">facebook</span>
+      <div class="header-user">
+        <div class="avatar avatar-sm" id="currentUserAvatar"></div>
+        <span id="currentUserName"></span>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-layout">
+    <!-- Create post card -->
+    <section class="card create-post">
+      <div class="create-post-top">
+        <div class="avatar" id="createPostAvatar"></div>
+        <button class="create-post-input-btn" id="openCreatePostModal">
+          What's on your mind?
+        </button>
+      </div>
+    </section>
+
+    <!-- Post feed -->
+    <section id="feed"></section>
+  </main>
+
+  <!-- Create / Edit post modal -->
+  <div class="modal-backdrop hidden" id="postModalBackdrop">
+    <div class="modal card" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-header">
+        <h2 id="modalTitle">Create post</h2>
+        <button class="close-btn" id="closePostModal" aria-label="Close">&#x2715;</button>
+      </div>
+      <div class="modal-body">
+        <div class="modal-user-row">
+          <div class="avatar" id="modalAvatar"></div>
+          <span id="modalUserName"></span>
+        </div>
+        <textarea
+          id="postContent"
+          class="post-textarea"
+          placeholder="What's on your mind?"
+          maxlength="5000"
+        ></textarea>
+        <div class="char-count"><span id="charCount">0</span> / 5000</div>
+        <div class="image-preview-wrap hidden" id="imagePreviewWrap">
+          <img id="imagePreview" src="" alt="Image preview" />
+          <button class="remove-image-btn" id="removeImage" aria-label="Remove image">&#x2715;</button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <label class="add-photo-btn" for="postImageInput" title="Add photo">
+          📷 Photo
+          <input type="file" id="postImageInput" accept="image/*" class="sr-only" />
+        </label>
+        <button class="submit-btn" id="submitPost" disabled>Post</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Comment section (inline, per post) -->
+
+  <script src="app.js"></script>
+</body>
+</html>
